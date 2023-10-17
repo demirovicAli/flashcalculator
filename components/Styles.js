@@ -120,4 +120,12 @@ export const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 20,
   },
+
+  recordContainer: {
+    flexDirection: "column",
+  },
+
+  record: {
+    flexDirection: "column",
+  },
 });

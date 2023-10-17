@@ -1,23 +1,52 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, SafeAreaView, Animated } from "react-native";
 import Header from "./components/Header";
 import Keyboard from "./components/Keyboard";
 import Cards from "./components/Cards";
+import Record from "./components/Record";
 import React, { useState, useRef, useEffect } from "react";
 import { styles } from "./components/Styles";
+import { Audio } from "expo-av";
 
 export default function App() {
   const [time, setTime] = React.useState(0);
   const [isRunning, setIsRunning] = React.useState(false);
   const [calculations, setCalcuations] = React.useState([]);
   const [result, setResult] = React.useState([]);
+  const [record, setRecord] = React.useState([]);
+  const [sound, setSound] = React.useState();
 
+  async function playSound() {
+    console.log("Loading Sound");
+    const { sound } = await Audio.Sound.createAsync(
+      require("./assets/background_music.mp3")
+    );
+    setSound(sound);
+
+    console.log("Playing Sound");
+    await sound.playAsync();
+  }
+
+  React.useEffect(() => {
+    return sound
+      ? () => {
+          console.log("Unloading Sound");
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
+  function saveRecord() {
+    const newRecords = [...record, time];
+    newRecords.sort((a, b) => a - b); // Sorts from best (shortest) time to worst (longest)
+    setRecord(newRecords.slice(0, 5)); // Keeps only the top 5 times
+  }
   let oldTime = new Date();
 
   function populate() {
     let temp = [];
 
-    for (let i = 1; i < 3; i++) {
+    for (let i = 1; i < 2; i++) {
       temp.push([i, 5]);
       temp.push([i, 8]);
       temp.push([i, 11]);
@@ -49,40 +78,81 @@ export default function App() {
   const intervalRef = useRef(null);
 
   useEffect(() => {
-    return () => {
-      // Component will unmount
-      clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  const start = () => {
     if (isRunning) {
-      clearInterval(intervalRef.current);
-      resetStopwatch();
-    } else {
-      setCalcuations(shuffle(populate()));
       const startTime = Date.now() - time;
       intervalRef.current = setInterval(() => {
         setTime(Date.now() - startTime);
       }, 1000);
+    } else {
+      clearInterval(intervalRef.current);
+      setTime(0);
+    }
+    return () => clearInterval(intervalRef.current); // Cleanup on unmount
+  }, [isRunning]);
+
+  const start = () => {
+    if (isRunning) {
+      setSound();
+      setTime(0);
+      setCalcuations([]);
+    } else {
+      setCalcuations(shuffle(populate()));
+      playSound();
     }
     setIsRunning(!isRunning);
   };
-  const resetStopwatch = () => {
-    clearInterval(intervalRef.current);
-    setIsRunning(false);
-    setTime(0);
+
+  function renderCards() {
+    if (isRunning) {
+      return <Cards calculations={calculations} isRunning={isRunning} />;
+    } else {
+      console.log(record);
+      return <Record record={record}></Record>;
+    }
+  }
+
+  //Animation
+
+  const colorAnimation = useRef(new Animated.Value(0)).current;
+
+  const backgroundColor = colorAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#ddd", "#f00"],
+  });
+
+  const triggerWrongResultAnimation = () => {
+    // First animate to red
+    Animated.timing(colorAnimation, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: false,
+    }).start(() => {
+      // Then animate back to original after a brief pause
+      Animated.sequence([
+        Animated.delay(1000), // Pause for 1 second
+        Animated.timing(colorAnimation, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Header start={start} time={time} isRunning={isRunning} result={result} />
-      <Cards calculations={calculations} isRunning={isRunning} />
+      {renderCards()}
       <Keyboard
         setResult={setResult}
         result={result}
         calculations={calculations}
         setCalcuations={setCalcuations}
+        setRecord={setRecord}
+        setIsRunning={setIsRunning}
+        isRunning={isRunning}
+        saveRecord={saveRecord}
+        setSound={setSound}
       />
     </SafeAreaView>
   );
