@@ -22,8 +22,8 @@ export const styles = StyleSheet.create({
   },
 
   startButton: {
-    width: 100,
-    height: 75,
+    width: 60,
+    height: 40,
     backgroundColor: "white",
     borderRadius: 20,
     textAlign: "center",
@@ -34,8 +34,8 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     textAlign: "center",
     alignItems: "center",
-    padding: 20,
-    fontSize: 20,
+    fontSize: 15,
+    padding: 5,
   },
   result: {
     backgroundColor: "purple",

@@ -7,6 +7,51 @@ import Record from "./components/Record";
 import React, { useState, useRef, useEffect } from "react";
 import { styles } from "./components/Styles";
 import { Audio } from "expo-av";
+import * as AuthSession from "expo-auth-session";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import app from "./components/firebaseConfig";
+
+const useGoogleAuth = () => {
+  const [name, setName] = React.useState("");
+
+  const discovery = {
+    authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+    tokenEndpoint: "https://oauth2.googleapis.com/token",
+    revocationEndpoint: "https://oauth2.googleapis.com/revoke",
+  };
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId:
+        "125660700772-gdq0fatup5v75pvvp98i4d26m6pmq2m7.apps.googleusercontent.com", // From Google Cloud Console
+      scopes: ["profile", "email"],
+      redirectUri: AuthSession.makeRedirectUri(),
+    },
+    discovery
+  );
+
+  React.useEffect(() => {
+    if (response?.type === "success") {
+      const { access_token } = response.params;
+      fetch("https://www.googleapis.com/userinfo/v2/me", {
+        headers: { Authorization: `Bearer ${access_token}` },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setName(data.name);
+        });
+    }
+  }, [response]);
+
+  return { promptAsync, name };
+};
 
 export default function App() {
   const [time, setTime] = React.useState(0);
@@ -15,6 +60,29 @@ export default function App() {
   const [result, setResult] = React.useState([]);
   const [record, setRecord] = React.useState([]);
   const [sound, setSound] = React.useState();
+
+  const { promptAsync, name } = useGoogleAuth();
+
+  //Save score
+
+  const db = getFirestore();
+
+  // Save a score
+  function saveScore(userId, score) {
+    const scoresCollection = collection(db, "scores");
+    addDoc(scoresCollection, {
+      userId: userId,
+      score: score,
+      timestamp: serverTimestamp(),
+    });
+  }
+
+  // Get top scores
+  function getTopScores() {
+    const scoresCollection = collection(db, "scores");
+    const q = query(scoresCollection, orderBy("score", "desc"), limit(10));
+    return q;
+  }
 
   async function playSound() {
     console.log("Loading Sound");
@@ -141,7 +209,14 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header start={start} time={time} isRunning={isRunning} result={result} />
+      <Header
+        start={start}
+        time={time}
+        isRunning={isRunning}
+        result={result}
+        promptAsync={promptAsync}
+        name={name}
+      />
       {renderCards()}
       <Keyboard
         setResult={setResult}
