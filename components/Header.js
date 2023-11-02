@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { styles } from "./Styles";
 import { Button } from "react-native";
-
+import SignIn from "./SignIn";
 function Header(props) {
   const formatTime = (time) => {
     if (time !== undefined) {
@@ -24,9 +24,7 @@ function Header(props) {
           {!props.isRunning ? "Start" : "Stop"}
         </Text>
       </TouchableOpacity>
-
-      <Button title="Sign in with Google" onPress={props.promptAsync} />
-      <Text>{props.name}</Text>
+      <SignIn />
       <View style={styles.result}>
         <Text style={styles.resultText}>{props.result}</Text>
       </View>

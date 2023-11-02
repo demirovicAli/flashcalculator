@@ -2,6 +2,7 @@
   "expo": {
     "name": "flashcalc",
     "slug": "flashcalc",
+    "scheme": "flashcalc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,6 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.alidemirovic.flashcalc"
     },
     "web": {

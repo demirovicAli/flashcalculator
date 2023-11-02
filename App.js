@@ -7,7 +7,6 @@ import Record from "./components/Record";
 import React, { useState, useRef, useEffect } from "react";
 import { styles } from "./components/Styles";
 import { Audio } from "expo-av";
-import * as AuthSession from "expo-auth-session";
 import {
   getFirestore,
   collection,
@@ -18,50 +17,12 @@ import {
 } from "firebase/firestore";
 import app from "./components/firebaseConfig";
 
-const useGoogleAuth = () => {
-  const [name, setName] = React.useState("");
-
-  const discovery = {
-    authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenEndpoint: "https://oauth2.googleapis.com/token",
-    revocationEndpoint: "https://oauth2.googleapis.com/revoke",
-  };
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId:
-        "125660700772-gdq0fatup5v75pvvp98i4d26m6pmq2m7.apps.googleusercontent.com", // From Google Cloud Console
-      scopes: ["profile", "email"],
-      redirectUri: AuthSession.makeRedirectUri(),
-    },
-    discovery
-  );
-
-  React.useEffect(() => {
-    if (response?.type === "success") {
-      const { access_token } = response.params;
-      fetch("https://www.googleapis.com/userinfo/v2/me", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          setName(data.name);
-        });
-    }
-  }, [response]);
-
-  return { promptAsync, name };
-};
-
 export default function App() {
   const [time, setTime] = React.useState(0);
   const [isRunning, setIsRunning] = React.useState(false);
   const [calculations, setCalcuations] = React.useState([]);
   const [result, setResult] = React.useState([]);
   const [record, setRecord] = React.useState([]);
-  const [sound, setSound] = React.useState();
-
-  const { promptAsync, name } = useGoogleAuth();
 
   //Save score
 
@@ -83,26 +44,6 @@ export default function App() {
     const q = query(scoresCollection, orderBy("score", "desc"), limit(10));
     return q;
   }
-
-  async function playSound() {
-    console.log("Loading Sound");
-    const { sound } = await Audio.Sound.createAsync(
-      require("./assets/background_music.mp3")
-    );
-    setSound(sound);
-
-    console.log("Playing Sound");
-    await sound.playAsync();
-  }
-
-  React.useEffect(() => {
-    return sound
-      ? () => {
-          console.log("Unloading Sound");
-          sound.unloadAsync();
-        }
-      : undefined;
-  }, [sound]);
 
   function saveRecord() {
     const newRecords = [...record, time];
@@ -160,12 +101,10 @@ export default function App() {
 
   const start = () => {
     if (isRunning) {
-      setSound();
       setTime(0);
       setCalcuations([]);
     } else {
       setCalcuations(shuffle(populate()));
-      playSound();
     }
     setIsRunning(!isRunning);
   };
@@ -209,14 +148,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        start={start}
-        time={time}
-        isRunning={isRunning}
-        result={result}
-        promptAsync={promptAsync}
-        name={name}
-      />
+      <Header start={start} time={time} isRunning={isRunning} result={result} />
       {renderCards()}
       <Keyboard
         setResult={setResult}
@@ -227,7 +159,6 @@ export default function App() {
         setIsRunning={setIsRunning}
         isRunning={isRunning}
         saveRecord={saveRecord}
-        setSound={setSound}
       />
     </SafeAreaView>
   );

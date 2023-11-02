@@ -32,7 +32,6 @@ const Keyboard = (props) => {
       props.saveRecord();
       props.setIsRunning(false);
       props.setResult("");
-      props.setSound();
     } else {
       setKeyColor("red");
       setTimeout(() => setKeyColor("white"), 100); // Reset after 1 second
